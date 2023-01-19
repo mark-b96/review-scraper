@@ -28,7 +28,7 @@ def parse_arguments():
         "-s",
         type=str,
         help="Search term",
-        default="iphone"
+        default=""
     )
     return a.parse_args()
 
