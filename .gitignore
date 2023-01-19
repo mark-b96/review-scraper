@@ -1,4 +1,4 @@
 __pycache__
 .idea
-data/input/*
-data/output/*
+data/input/*.csv
+data/output/*.xlsx
