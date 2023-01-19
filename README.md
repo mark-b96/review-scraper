@@ -24,3 +24,7 @@ Product asins will be output to a csv in `data/input/`
 | -i | Input csv product asin file | 
 | -o | Output directory            |
 | -w | Website to scrape (Must be in [this](https://github.com/mark-b96/review-scraper/blob/main/review_scraper/urls.py) file) |
+
+## Supported websites
+* amazon.co.uk
+* johnlewis.com
