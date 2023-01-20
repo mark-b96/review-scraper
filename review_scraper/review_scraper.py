@@ -7,13 +7,9 @@ from loguru import logger
 from typing import List, Dict
 
 
-from review_scraper.urls import product_reviews
+from review_scraper.urls import websites, headers
 
 MAX_REVIEW_PAGES = 50
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-}
 
 
 class ReviewScraper:
@@ -22,9 +18,14 @@ class ReviewScraper:
         self.reviews_per_page: int = reviews_per_page
         self.data_handler_obj = data_handler_obj
 
-    @staticmethod
-    def get(url: str) -> requests.Response:
-        return requests.get(url=url, headers=HEADERS)
+    def get(self, url: str) -> requests.Response:
+        try:
+            return requests.get(url=url, headers=headers)
+        except Exception as e:
+            logger.debug(e)
+            self.delay(120.0, 130.0)
+            logger.info("Attempting to access server after delay")
+            return requests.get(url=url, headers=headers)
 
     @staticmethod
     def delay(min_seconds: float = 1.3, max_seconds: float = 4.0) -> None:
@@ -90,7 +91,7 @@ class ReviewScraper:
         for page_num in range(1, MAX_REVIEW_PAGES):
             logger.info(f"Parsing page {page_num} of product id: {product_id}...")
 
-            url = product_reviews[self.website]["scrape"].substitute(
+            url = websites[self.website]["scrape"].substitute(
                 page_num=page_num, product_id=product_id
             )
 
@@ -120,7 +121,7 @@ class ReviewScraper:
         return review_dict
 
     def scrape(self, product_ids: List[str]) -> None:
-        assert self.website in product_reviews
+        assert self.website in websites
 
         for product_id in product_ids:
             user_reviews_list = self.parse_product_reviews(product_id=product_id)
@@ -129,13 +130,13 @@ class ReviewScraper:
             )
 
     def search(self, search_term: str) -> None:
-        assert self.website in product_reviews
+        assert self.website in websites
 
-        search_url = product_reviews[self.website]["search"]["url"]
-        response = requests.get(f"{search_url}{search_term}", headers=HEADERS)
+        search_url = websites[self.website]["search"]["url"]
+        response = requests.get(f"{search_url}{search_term}", headers=headers)
         html_response = BeautifulSoup(response.text, "html.parser")
 
-        parsing_data = product_reviews[self.website]["search"]["parser"]
+        parsing_data = websites[self.website]["search"]["parser"]
         find_all = parsing_data[0]
         selector, heading, name = find_all
         product_id_key = parsing_data[1][0]

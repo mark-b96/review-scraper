@@ -1,6 +1,6 @@
 from string import Template
 
-product_reviews = {
+websites = {
     "amazon": {
         "scrape": Template(
             "https://www.amazon.co.uk/product-reviews/$product_id/"
@@ -26,4 +26,19 @@ product_reviews = {
             "parser": [["article", "data-test", "product-card"], ["data-product-id"]],
         },
     },
+}
+
+headers = {
+    "pragma": "no-cache",
+    "cache-control": "no-cache",
+    "dnt": "1",
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/"
+              "*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "sec-fetch-site": "none",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-dest": "document",
+    "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
 }

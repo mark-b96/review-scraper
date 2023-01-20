@@ -10,7 +10,7 @@ def parse_arguments():
         "-i",
         type=str,
         help="Input csv file",
-        default="/home/mark/Documents/product_reviews/input/john_lewis_iphone_asins.csv",
+        default="/home/mark/Documents/product_reviews/input/john_lewis_samsung_asins.csv",
     )
     a.add_argument(
         "-o",
