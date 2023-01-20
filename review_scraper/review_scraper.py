@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 from typing import List, Dict
 
+
 from review_scraper.urls import product_reviews
 
 MAX_REVIEW_PAGES = 50
@@ -43,7 +44,8 @@ class ReviewScraper:
         for item in reviews:
             review_dict["title"].append(item["title"])
             review_dict["rating"].append(item["overallRating"]["value"])
-            review_dict["body"].append(item["text"])
+            review_dict["content"].append(item["text"])
+            review_dict["location"].append(item["reviewer"]["location"])
 
         return is_last_page
 
@@ -60,15 +62,22 @@ class ReviewScraper:
             item_title = item.find("a", {"data-hook": "review-title"})
             item_rating = item.find("i", {"data-hook": "review-star-rating"})
             item_text = item.find("span", {"data-hook": "review-body"})
+            item_date = item.find("span", {"data-hook": "review-date"})
 
-            if not all([item_title, item_rating, item_text]):
+            if not item_title:
+                item_title = item.find("span", {"data-hook": "review-title"})
+            if not item_rating:
+                item_rating = item.find("i", {"data-hook": "cmps-review-star-rating"})
+
+            if not all([item_title, item_rating, item_text, item_date]):
                 continue
 
             review_dict["title"].append(item_title.text.strip())
             review_dict["rating"].append(
                 float(item_rating.text.replace("out of 5 stars", "").strip())
             )
-            review_dict["body"].append(item_text.text.strip())
+            review_dict["content"].append(item_text.text.strip())
+            review_dict["location"].append(item_date.text.strip())
             review_count += 1
 
         if review_count < self.reviews_per_page:
@@ -76,7 +85,7 @@ class ReviewScraper:
         return is_last_page
 
     def parse_product_reviews(self, product_id: str) -> Dict[str, List]:
-        review_dict = {"title": [], "rating": [], "body": []}
+        review_dict = {"title": [], "location": [], "rating": [], "content": []}
 
         for page_num in range(1, MAX_REVIEW_PAGES):
             logger.info(f"Parsing page {page_num} of {product_id}...")
@@ -110,13 +119,13 @@ class ReviewScraper:
                 break
         return review_dict
 
-    def scrape(self, product_ids: List[str], output_file_path: str) -> None:
+    def scrape(self, product_ids: List[str]) -> None:
         assert self.website in product_reviews
 
         for product_id in product_ids:
             user_reviews_list = self.parse_product_reviews(product_id=product_id)
             self.data_handler_obj.save_to_excel(
-                save_path=f"{output_file_path}/{product_id}", data=user_reviews_list
+                file_name=str(product_id), data=user_reviews_list
             )
 
     def search(self, search_term: str) -> None:
@@ -135,6 +144,6 @@ class ReviewScraper:
         product_asins = [result[product_id_key] for result in search_results]
 
         self.data_handler_obj.save_to_csv(
-            save_path=f"data/input/{self.website}_{search_term}_asins",
+            file_name=f"{self.website}_{search_term}_asins",
             data=product_asins,
         )

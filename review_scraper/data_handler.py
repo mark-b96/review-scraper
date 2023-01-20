@@ -1,20 +1,23 @@
 import pandas as pd
 from loguru import logger
 from typing import List, Dict
+from pathlib import Path
 
 
 class DataHandler:
-    @staticmethod
-    def save_to_excel(save_path: str, data: Dict[str, List]) -> None:
-        logger.info(f"Saving data to {save_path}.xlsx")
-        df = pd.DataFrame(data)
-        df.to_excel(f"{save_path}.xlsx", index=False)
+    def __init__(self, output_dir: str):
+        self.output_dir: str = output_dir
 
-    @staticmethod
-    def save_to_csv(save_path: str, data: List) -> None:
-        logger.info(f"Saving data to {save_path}.csv")
+    def save_to_excel(self, file_name: str, data: Dict[str, List]) -> None:
+        file_path = Path(self.output_dir, f"{file_name}.xlsx")
+        logger.info(f"Saving data to {file_path}")
         df = pd.DataFrame(data)
-        file_path = f"{save_path}.csv"
+        df.to_excel(file_path, index=False)
+
+    def save_to_csv(self, file_name: str, data: List) -> None:
+        file_path = Path(self.output_dir, f"{file_name}.csv")
+        logger.info(f"Saving data to {file_path}")
+        df = pd.DataFrame(data)
         df.to_csv(file_path, index=False, header=False)
 
     @staticmethod
