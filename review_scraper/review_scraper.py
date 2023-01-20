@@ -88,7 +88,7 @@ class ReviewScraper:
         review_dict = {"title": [], "location": [], "rating": [], "content": []}
 
         for page_num in range(1, MAX_REVIEW_PAGES):
-            logger.info(f"Parsing page {page_num} of {product_id}...")
+            logger.info(f"Parsing page {page_num} of product id: {product_id}...")
 
             url = product_reviews[self.website]["scrape"].substitute(
                 page_num=page_num, product_id=product_id
