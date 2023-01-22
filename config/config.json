@@ -33,6 +33,23 @@
           ]
         ]
       }
+    },
+    "buybuybaby": {
+      "scrape": "https://buybuybaby.com/apis/services/conversations/review?ProductId=$product_id&rows=8&start=$page_num&sort=SubmissionTime%20desc&Stats=Reviews&&__amp_source_origin=https%3A%2F%2Fwww.buybuybaby.com",
+      "reviews_per_page": 10,
+      "search": {
+        "url": "https://www.buybuybaby.com/store/s/",
+        "parser": [
+          [
+            "div",
+            "data-cta class",
+            "s12 t4 v025 height100 prodCardWrap"
+          ],
+          [
+            "data-attribute"
+          ]
+        ]
+      }
     }
   },
   "headers": {
