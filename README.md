@@ -13,11 +13,11 @@ Python script capable of obtaining product reviews from retailer websites.
 
 ## Usage
 ### Search
-`python3 main.py -s iphone -o ~/Documents/product_reviews/input/`
+`python3 main.py -s iphone -o ~/Documents/product_reviews/input/ -w amazon`
 
 Product asins will be output to a `csv` in `~/Documents/product_reviews/input/`
 ### Scrape
-`python3 main.py -i ~/Documents/product_reviews/input/john_lewis_iphone_asins.csv -o ~/Documents/product_reviews/output -w john_lewis`
+`python3 main.py -i ~/Documents/product_reviews/input/amazon_iphone_asins.csv -o ~/Documents/product_reviews/output -w amazon`
 
 Reviews will be output to an `xlsx` in `~/Documents/product_reviews/output/`
 
@@ -25,7 +25,7 @@ Reviews will be output to an `xlsx` in `~/Documents/product_reviews/output/`
 | :----:| :------: |
 | -i | Input csv product asin file | 
 | -o | Output directory            |
-| -w | Website to scrape (Must be in [this](https://github.com/mark-b96/review-scraper/blob/main/review_scraper/urls.py) file) |
+| -w | Website to scrape (Must be in `config/config.json` file) |
 
 ### Sample Input
 ```

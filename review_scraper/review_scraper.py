@@ -5,31 +5,34 @@ import json
 from bs4 import BeautifulSoup
 from loguru import logger
 from typing import List, Dict
-
-
-from review_scraper.urls import websites, headers
-
-MAX_REVIEW_PAGES = 50
+from string import Template
 
 
 class ReviewScraper:
-    def __init__(self, website: str, reviews_per_page: int, data_handler_obj):
+    def __init__(self, website: str, data_handler_obj):
         self.website: str = website
-        self.reviews_per_page: int = reviews_per_page
+        self.product_name = None
         self.data_handler_obj = data_handler_obj
+        self.headers: Dict[str, str] = self.data_handler_obj.config["headers"]
+        self.max_review_pages: int = self.data_handler_obj.config["max_review_pages"]
+        self.website_config = self.data_handler_obj.config["websites"][self.website]
+        self.reviews_per_page: int = self.website_config["reviews_per_page"]
+        self.min_delay, self.max_delay = self.data_handler_obj.config[
+            "delay_between_requests"
+        ]
 
     def get(self, url: str) -> requests.Response:
         try:
-            return requests.get(url=url, headers=headers)
+            return requests.get(url=url, headers=self.headers)
         except Exception as e:
             logger.debug(e)
             self.delay(120.0, 130.0)
             logger.info("Attempting to access server after delay")
-            return requests.get(url=url, headers=headers)
+            return requests.get(url=url, headers=self.headers)
 
     @staticmethod
-    def delay(min_seconds: float = 1.3, max_seconds: float = 4.0) -> None:
-        sleep_seconds = random.uniform(min_seconds, max_seconds)
+    def delay(min_delay: float, max_delay: float) -> None:
+        sleep_seconds = random.uniform(min_delay, max_delay)
         logger.info(sleep_seconds)
         time.sleep(sleep_seconds)
 
@@ -54,6 +57,13 @@ class ReviewScraper:
         self, response: requests.Response, review_dict: Dict[str, List]
     ) -> bool:
         html_response = BeautifulSoup(response.text, "html.parser")
+        if not self.product_name:
+            self.product_name = (
+                html_response.title.text.replace("Amazon.co.uk:Customer reviews: ", "")
+                .strip()
+                .replace(" ", "_")
+                .replace("/", "_")
+            )
         reviews = html_response.find_all("div", {"data-hook": "review"})
         is_last_page = False
         review_count = 0
@@ -88,14 +98,16 @@ class ReviewScraper:
     def parse_product_reviews(self, product_id: str) -> Dict[str, List]:
         review_dict = {"title": [], "location": [], "rating": [], "content": []}
 
-        for page_num in range(1, MAX_REVIEW_PAGES):
+        for page_num in range(1, self.max_review_pages):
             logger.info(f"Parsing page {page_num} of product id: {product_id}...")
 
-            url = websites[self.website]["scrape"].substitute(
-                page_num=page_num, product_id=product_id
+            url = Template(self.website_config["scrape"]).substitute(
+                page_num=page_num,
+                product_id=product_id,
+                reviews_per_page=self.reviews_per_page,
             )
 
-            self.delay()
+            self.delay(min_delay=self.min_delay, max_delay=self.max_delay)
             response = self.get(url=url)
 
             if response.status_code != 200:
@@ -121,22 +133,19 @@ class ReviewScraper:
         return review_dict
 
     def scrape(self, product_ids: List[str]) -> None:
-        assert self.website in websites
-
         for product_id in product_ids:
             user_reviews_list = self.parse_product_reviews(product_id=product_id)
             self.data_handler_obj.save_to_excel(
-                file_name=str(product_id), data=user_reviews_list
+                file_name=f"{self.product_name}_{product_id}", data=user_reviews_list
             )
+            self.product_name = None
 
     def search(self, search_term: str) -> None:
-        assert self.website in websites
-
-        search_url = websites[self.website]["search"]["url"]
-        response = requests.get(f"{search_url}{search_term}", headers=headers)
+        search_url = self.website_config["search"]["url"]
+        response = requests.get(f"{search_url}{search_term}", headers=self.headers)
         html_response = BeautifulSoup(response.text, "html.parser")
 
-        parsing_data = websites[self.website]["search"]["parser"]
+        parsing_data = self.website_config["search"]["parser"]
         find_all = parsing_data[0]
         selector, heading, name = find_all
         product_id_key = parsing_data[1][0]

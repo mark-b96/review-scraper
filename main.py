@@ -6,20 +6,10 @@ from review_scraper.data_handler import DataHandler
 
 def parse_arguments():
     a = argparse.ArgumentParser()
-    a.add_argument(
-        "-i",
-        type=str,
-        help="Input csv file",
-        default="/home/mark/Documents/product_reviews/input/john_lewis_samsung_asins.csv",
-    )
-    a.add_argument(
-        "-o",
-        type=str,
-        help="Output directory path",
-        default="/home/mark/Documents/product_reviews/output",
-    )
-    a.add_argument("-w", type=str, help="Website to scrape", default="john_lewis")
-    a.add_argument("-s", type=str, help="Search term", default="")
+    a.add_argument("-i", type=str, help="Input csv file")
+    a.add_argument("-o", type=str, help="Output directory path")
+    a.add_argument("-w", type=str, help="Website to scrape")
+    a.add_argument("-s", type=str, help="Search term")
     return a.parse_args()
 
 
@@ -31,8 +21,9 @@ def main():
     search_term = args.s
 
     data_handler_obj = DataHandler(output_dir=output_dir)
+    data_handler_obj.load_config(file_path="config/config.json")
     review_scraper_obj = ReviewScraper(
-        website=website, reviews_per_page=10, data_handler_obj=data_handler_obj
+        website=website, data_handler_obj=data_handler_obj
     )
 
     if search_term:
