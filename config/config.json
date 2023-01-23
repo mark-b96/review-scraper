@@ -1,10 +1,13 @@
 {
   "websites": {
     "amazon": {
-      "scrape": "https://www.amazon.co.uk/product-reviews/$product_id/ref=cm_cr_getr_d_paging_btm_next_$page_num?ie=UTF8&reviewerType=all_reviews&pageNumber=$page_num",
-      "reviews_per_page": 10,
+      "scrape": {
+        "url": "https://www.amazon.co.uk/product-reviews/$product_id/ref=cm_cr_getr_d_paging_btm_next_$page_num?ie=UTF8&reviewerType=all_reviews&pageNumber=$page_num",
+        "reviews_per_page": 10
+      },
       "search": {
-        "url": "https://www.amazon.co.uk/s?k=",
+        "url": "https://www.amazon.co.uk/s?k=$search_term",
+        "search_spaces": "+",
         "parser": [
           [
             "div",
@@ -17,11 +20,15 @@
         ]
       }
     },
-    "john_lewis": {
-      "scrape": "https://api.johnlewis.com/ratings-reviews/v1/reviews?productId=$product_id&pageNumber=$page_num&pageSize=$reviews_per_page&sort=newest&api_key=AIzaSyD0XVOmTWbXYigofMbhS9cSeG76BwQisO8",
-      "reviews_per_page": 25,
+    "johnlewis": {
+      "scrape": {
+        "url": "https://api.johnlewis.com/ratings-reviews/v1/reviews?productId=$product_id&pageNumber=$page_num&pageSize=$reviews_per_page&sort=newest&api_key=AIzaSyD0XVOmTWbXYigofMbhS9cSeG76BwQisO8",
+        "reviews_per_page": 25,
+        "parser": {"results_key": "reviews", "review_title": "title", "review_text": "text", "review_rating": ["overallRating", "value"], "review_location": ["reviewer", "location"] }
+      },
       "search": {
-        "url": "https://www.johnlewis.com/search?search-term=",
+        "url": "https://www.johnlewis.com/search?search-term=$search_term",
+        "search_spaces": "+",
         "parser": [
           [
             "article",
@@ -35,10 +42,14 @@
       }
     },
     "buybuybaby": {
-      "scrape": "https://buybuybaby.com/apis/services/conversations/review?ProductId=$product_id&rows=8&start=$page_num&sort=SubmissionTime%20desc&Stats=Reviews&&__amp_source_origin=https%3A%2F%2Fwww.buybuybaby.com",
-      "reviews_per_page": 10,
+      "scrape": {
+        "url": "https://buybuybaby.com/apis/services/conversations/review?ProductId=$product_id&rows=8&start=$page_num&sort=SubmissionTime%20desc&Stats=Reviews&&__amp_source_origin=https%3A%2F%2Fwww.buybuybaby.com",
+        "reviews_per_page": 8,
+        "parser": {"results_key": "Results", "review_title": "Title", "review_text": "ReviewText", "review_rating": "Rating", "review_location":  ""}
+      },
       "search": {
-        "url": "https://www.buybuybaby.com/store/s/",
+        "url": "https://www.buybuybaby.com/apis/services/composite/product-listing/v1.0/all?web3feo=1&site=BuyBuyBaby&currencyCode=USD&country=US&rT=xtCompat&tz=0&displayAdsAt=6&web3feo=abc&q=$search_term&wt=json&badge_ids=7464&url=%2Fstore%2Fs&noFacet=false&facets=%7B%7D&start=0&perPage=24&sws=&storeOnlyProducts=false&customPriceRange=false&__amp_source_origin=https%3A%2F%2Fwww.buybuybaby.com",
+        "search_spaces": "%20",
         "parser": [
           [
             "div",
@@ -46,7 +57,7 @@
             "s12 t4 v025 height100 prodCardWrap"
           ],
           [
-            "data-attribute"
+            "PRODUCT_ID"
           ]
         ]
       }

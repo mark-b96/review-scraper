@@ -7,8 +7,8 @@ from review_scraper.data_handler import DataHandler
 def parse_arguments():
     a = argparse.ArgumentParser()
     a.add_argument("-i", type=str, help="Input csv file")
-    a.add_argument("-o", type=str, help="Output directory path")
-    a.add_argument("-w", type=str, help="Website to scrape")
+    a.add_argument("-o", type=str, required=True, help="Output directory path")
+    a.add_argument("-w", type=str, required=True, help="Website to scrape")
     a.add_argument("-s", type=str, help="Search term")
     return a.parse_args()
 
@@ -27,7 +27,6 @@ def main():
     )
 
     if search_term:
-        search_term = search_term.strip().replace(" ", "+")
         review_scraper_obj.search(search_term=search_term)
     else:
         product_ids = data_handler_obj.read_product_asins(file_path=args.i)

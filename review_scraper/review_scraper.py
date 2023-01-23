@@ -3,6 +3,7 @@ import random
 import requests
 import json
 from bs4 import BeautifulSoup
+from googletrans import Translator
 from loguru import logger
 from typing import List, Dict
 from string import Template
@@ -13,10 +14,13 @@ class ReviewScraper:
         self.website: str = website
         self.product_name = None
         self.data_handler_obj = data_handler_obj
+        self.translator = Translator()
         self.headers: Dict[str, str] = self.data_handler_obj.config["headers"]
         self.max_review_pages: int = self.data_handler_obj.config["max_review_pages"]
         self.website_config = self.data_handler_obj.config["websites"][self.website]
-        self.reviews_per_page: int = self.website_config["reviews_per_page"]
+        self.search_config = self.website_config["search"]
+        self.scrape_config = self.website_config["scrape"]
+        self.reviews_per_page: int = self.website_config["scrape"]["reviews_per_page"]
         self.min_delay, self.max_delay = self.data_handler_obj.config[
             "delay_between_requests"
         ]
@@ -39,17 +43,34 @@ class ReviewScraper:
     def parse_json_reviews(
         self, review_dict: Dict[str, List], json_response: Dict
     ) -> bool:
-        reviews = json_response["reviews"]
+        scraper_config = self.scrape_config["parser"]
+        results_key = scraper_config["results_key"]
+        reviews = json_response[results_key]
         is_last_page = False
 
         if len(reviews) < self.reviews_per_page:
             is_last_page = True
 
+        title_key = scraper_config["review_title"]
+        text_key = scraper_config["review_text"]
+        rating_key = scraper_config["review_rating"]
+        location_key = scraper_config["review_location"]
         for item in reviews:
-            review_dict["title"].append(item["title"])
-            review_dict["rating"].append(item["overallRating"]["value"])
-            review_dict["content"].append(item["text"])
-            review_dict["location"].append(item["reviewer"]["location"])
+            review_dict["title"].append(item[title_key])
+            if isinstance(rating_key, list):
+                rating = item[rating_key[0]][rating_key[1]]
+            else:
+                rating = item[rating_key]
+            review_dict["rating"].append(rating)
+            review_dict["content"].append(item[text_key])
+            if location_key:
+                if isinstance(location_key, list):
+                    location = item[location_key[0]][location_key[1]]
+                else:
+                    location = item[location_key]
+                review_dict["location"].append(location)
+            else:
+                review_dict["location"].append("")
 
         return is_last_page
 
@@ -66,6 +87,7 @@ class ReviewScraper:
             )
         reviews = html_response.find_all("div", {"data-hook": "review"})
         is_last_page = False
+        is_international_review = False
         review_count = 0
 
         for item in reviews:
@@ -77,6 +99,7 @@ class ReviewScraper:
 
             if not item_title:
                 item_title = item.find("span", {"data-hook": "review-title"})
+                is_international_review = True
             if not item_rating:
                 item_rating = item.find("i", {"data-hook": "cmps-review-star-rating"})
 
@@ -87,7 +110,14 @@ class ReviewScraper:
             review_dict["rating"].append(
                 float(item_rating.text.replace("out of 5 stars", "").strip())
             )
-            review_dict["content"].append(item_text.text.strip())
+            content = item_text.text.strip()
+            if is_international_review and content:
+                try:
+                    content = self.translator.translate(content).text
+                except Exception as e:
+                    logger.error("Unable to translate review")
+                    logger.error(e)
+            review_dict["content"].append(content)
             review_dict["location"].append(item_date.text.strip())
             review_count += 1
 
@@ -101,7 +131,7 @@ class ReviewScraper:
         for page_num in range(1, self.max_review_pages):
             logger.info(f"Parsing page {page_num} of product id: {product_id}...")
 
-            url = Template(self.website_config["scrape"]).substitute(
+            url = Template(self.website_config["scrape"]["url"]).substitute(
                 page_num=page_num,
                 product_id=product_id,
                 reviews_per_page=self.reviews_per_page,
@@ -141,17 +171,28 @@ class ReviewScraper:
             self.product_name = None
 
     def search(self, search_term: str) -> None:
-        search_url = self.website_config["search"]["url"]
-        response = requests.get(f"{search_url}{search_term}", headers=self.headers)
-        html_response = BeautifulSoup(response.text, "html.parser")
+        search_term = search_term.strip().replace(" ", self.search_config["search_spaces"])
+        search_url = Template(self.search_config["url"]).substitute(search_term=search_term)
+        response = requests.get(search_url, headers=self.headers)
 
+        response_type = response.headers.get("content-type")
         parsing_data = self.website_config["search"]["parser"]
-        find_all = parsing_data[0]
-        selector, heading, name = find_all
         product_id_key = parsing_data[1][0]
 
-        search_results = html_response.find_all(selector, {heading: name})
-        product_asins = [result[product_id_key] for result in search_results]
+        if "html" in response_type:
+            html_response = BeautifulSoup(response.text, "html.parser")
+            find_all = parsing_data[0]
+            selector, heading, name = find_all
+
+            search_results = html_response.find_all(selector, {heading: name})
+            product_asins = [result[product_id_key] for result in search_results]
+        elif "json" in response_type:
+            json_response = json.loads(response.text)
+            search_results = json_response["response"]["docs"]
+            product_asins = [result[product_id_key] for result in search_results if product_id_key in result]
+        else:
+            logger.error("Invalid response type")
+            return
 
         self.data_handler_obj.save_to_csv(
             file_name=f"{self.website}_{search_term}_asins",
