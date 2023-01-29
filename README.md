@@ -12,30 +12,18 @@ Python script capable of obtaining product reviews from retailer websites.
 5. Install requirements: `pip install -r requirements.txt`
 
 ## Usage
-### Search
-`python3 main.py -s iphone -o ~/Documents/product_reviews/input/ -w amazon`
-
-Product asins will be output to a `csv` in `~/Documents/product_reviews/input/`
 ### Scrape
-`python3 main.py -i ~/Documents/product_reviews/input/amazon_iphone_asins.csv -o ~/Documents/product_reviews/output -w amazon`
+`python main.py -i <path to input csv file>`
 
-Reviews will be output to an `xlsx` in `~/Documents/product_reviews/output/`
-
-| Argument | Description |
-| :----:| :------: |
-| -i | Input csv product asin file | 
-| -o | Output directory            |
-| -w | Website to scrape (Must be in `config/config.json` file) |
-
-### Sample Input
+#### Sample input csv file
 ```
-6345513
+Product ID	Website	 Output directory	                        Process
+B08L5RD3KR	amazon	 /home/mark/Documents/product_reviews/output/   TRUE
 ```
-### Sample Output
+#### Sample output csv file
 ```
-title	                location rating  content
-A good looking product	Oxford	      5	 I only purchased a new phone because my old one has various problems.  I chose blue and love all the new features and the size and weight of my new phone.  And a good price for a fabulous product.  xx
-
+id	        date	        title	        rating	location        verified content
+RJ7ZBP2X6517B	18 January 2023	First new phone	5	United Kingdom	TRUE	 Nice phone, meets all my requirements
 ```
 
 ## Supported websites

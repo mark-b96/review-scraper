@@ -1,37 +1,52 @@
-import pandas as pd
+import csv
 import json
+
+import pandas as pd
 from loguru import logger
-from typing import List, Dict
 from pathlib import Path
-from glob import glob
+
+from typing import List
+
+CSV_HEADER_COLUMNS = [
+    "id",
+    "date",
+    "title",
+    "rating",
+    "location",
+    "verified",
+    "content",
+]
 
 
 class DataHandler:
-    def __init__(self, output_dir: str):
-        self.output_dir: str = output_dir
+    def __init__(self):
         self.config = None
+        self.input_data = None
+        self.csv_writer, self.csv_file = None, None
 
-    def load_config(self, file_path: str) -> None:
+    def load_json_config(self, file_path: str) -> None:
         with open(file_path) as f:
             self.config = json.load(f)
 
-    def save_to_excel(self, file_name: str, data: Dict[str, List]) -> None:
-        file_path = Path(self.output_dir, f"{file_name}.xlsx")
-        logger.info(f"Saving data to {file_path}")
-        df = pd.DataFrame(data)
-        df.to_excel(file_path, index=False)
+    def load_input_csv(self, file_path: str) -> None:
+        input_xlsx = pd.read_csv(file_path)
+        filtered_input_xlsx = input_xlsx[input_xlsx["Process"] == True]
+        self.input_data = {
+            "product_id": filtered_input_xlsx["Product ID"].tolist(),
+            "website": filtered_input_xlsx["Website"].tolist(),
+            "output_dir": filtered_input_xlsx["Output directory"].tolist(),
+        }
 
-    def save_to_csv(self, file_name: str, data: List) -> None:
-        file_path = Path(self.output_dir, f"{file_name}.csv")
-        logger.info(f"Saving data to {file_path}")
-        df = pd.DataFrame(data)
-        df.to_csv(file_path, index=False, header=False)
+    def init_output_csv(self, output_dir: str, file_name: str) -> None:
+        output_path = Path(output_dir, f"{file_name}.csv")
+        logger.info(f"Saving data to {output_path}")
+        self.csv_file = open(output_path, "w")
+        self.csv_writer = csv.writer(self.csv_file)
+        self.csv_writer.writerow(CSV_HEADER_COLUMNS)
 
-    def read_product_asins(self, file_path: str) -> List[str]:
-        processed_product_asins = [
-            Path(asin).stem.split("_")[-1] for asin in glob(f"{self.output_dir}/*.xlsx")
-        ]
-        input_product_asins = pd.read_csv(file_path, header=None)[0].to_list()
-        return [
-            asin for asin in input_product_asins if asin not in processed_product_asins
-        ]
+    def reviews_to_csv(self, parsed_reviews: List[str]) -> None:
+        self.csv_writer.writerows(parsed_reviews)
+        self.csv_file.flush()
+
+    def close_csv_file(self):
+        self.csv_file.close()

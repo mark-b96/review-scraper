@@ -1,36 +1,31 @@
 import argparse
 
+from fake_useragent import FakeUserAgent
+
 from review_scraper.review_scraper import ReviewScraper
 from review_scraper.data_handler import DataHandler
 
 
 def parse_arguments():
     a = argparse.ArgumentParser()
-    a.add_argument("-i", type=str, help="Input csv file")
-    a.add_argument("-o", type=str, required=True, help="Output directory path")
-    a.add_argument("-w", type=str, required=True, help="Website to scrape")
-    a.add_argument("-s", type=str, help="Search term")
+    a.add_argument("-i", type=str, required=True, help="Input csv file")
     return a.parse_args()
 
 
 def main():
     args = parse_arguments()
+    input_xlsx_file_path = args.i
 
-    output_dir = args.o
-    website = args.w
-    search_term = args.s
+    data_handler_obj = DataHandler()
+    data_handler_obj.load_input_csv(file_path=input_xlsx_file_path)
+    data_handler_obj.load_json_config(file_path="config/config.json")
 
-    data_handler_obj = DataHandler(output_dir=output_dir)
-    data_handler_obj.load_config(file_path="config/config.json")
+    user_agent_obj = FakeUserAgent()
+
     review_scraper_obj = ReviewScraper(
-        website=website, data_handler_obj=data_handler_obj
+        data_handler_obj=data_handler_obj, user_agent_obj=user_agent_obj
     )
-
-    if search_term:
-        review_scraper_obj.search(search_term=search_term)
-    else:
-        product_ids = data_handler_obj.read_product_asins(file_path=args.i)
-        review_scraper_obj.scrape(product_ids=product_ids)
+    review_scraper_obj.scrape()
 
 
 if __name__ == "__main__":
